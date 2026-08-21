@@ -23,7 +23,8 @@ struct EQView: View {
             Divider()
             EQGraph(profile: $eq.profile,
                     analyzer: eq.analyzer,
-                    selectedBand: $selectedBand)
+                    selectedBand: $selectedBand,
+                    sampleRate: eq.currentSampleRate ?? 48_000)
                 .frame(height: 220)
                 .padding(12)
             hint
@@ -65,6 +66,7 @@ struct EQView: View {
                     .toggleStyle(.switch)
                     .tint(EQWashi.rikyu)
                     .labelsHidden()
+                    .accessibilityLabel("Equalizer")
             }
 
             HStack(spacing: 10) {
@@ -83,6 +85,7 @@ struct EQView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Import AutoEQ…")
+                .accessibilityLabel("Import AutoEQ…")
                 Button { eq.addBand() } label: {
                     Image(systemName: "plus")
                         .frame(width: 42, height: 26)
@@ -90,7 +93,11 @@ struct EQView: View {
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                .help("Add")
+                .disabled(eq.profile.bands.count >= PEQConstraints.maximumBands)
+                .help(eq.profile.bands.count >= PEQConstraints.maximumBands
+                      ? "Maximum \(PEQConstraints.maximumBands) bands"
+                      : "Add")
+                .accessibilityLabel("Add")
                 Button { eq.resetFlat() } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .frame(width: 42, height: 26)
@@ -99,6 +106,7 @@ struct EQView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Flat")
+                .accessibilityLabel("Flat")
             }
 
             HStack(spacing: 10) {
@@ -108,6 +116,13 @@ struct EQView: View {
                 Text(String(format: "%+.1f dB", eq.profile.preampDB))
                     .font(.system(size: 11).monospacedDigit())
                     .frame(width: 56, alignment: .trailing)
+                if eq.automaticHeadroomDB > 0.05 {
+                    Label(String(format: "Auto −%.1f", eq.automaticHeadroomDB),
+                          systemImage: "shield.lefthalf.filled")
+                        .font(.system(size: 9, weight: .medium).monospacedDigit())
+                        .foregroundStyle(EQWashi.rikyu)
+                        .help("Automatic headroom prevents output clipping")
+                }
             }
         }
     }
@@ -140,7 +155,7 @@ struct EQView: View {
     }
 
     private var hint: some View {
-        Text("Drag a point: frequency × gain · Scroll: Q")
+        Text("Drag: frequency × gain · Hover point + scroll: Q · Shift: fine")
             .font(.system(size: 9))
             .foregroundStyle(.secondary)
             .padding(.bottom, 2)
@@ -172,9 +187,12 @@ struct EQView: View {
     private var statusBar: some View {
         HStack {
             Circle()
-                .fill(eq.isEnabled ? EQWashi.rikyu : Color.secondary.opacity(0.5))
+                .fill(eq.clippingDetected ? Color.orange
+                      : (eq.isEnabled ? EQWashi.rikyu : Color.secondary.opacity(0.5)))
                 .frame(width: 7, height: 7)
-            Text(eq.statusMessage.isEmpty
+            Text(eq.clippingDetected
+                 ? String(localized: "Output peak protected — lower boost or preamp")
+                 : eq.statusMessage.isEmpty
                  ? (eq.isEnabled ? String(localized: "Equalizer active")
                                  : String(localized: "Bypassed — bit-perfect"))
                  : eq.statusMessage)
@@ -242,6 +260,7 @@ private struct BandRow: View {
                 Image(systemName: "trash").font(.system(size: 11))
             }
             .buttonStyle(.borderless)
+            .accessibilityLabel("Delete")
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
@@ -269,6 +288,7 @@ private struct BandRow: View {
                     .textFieldStyle(.roundedBorder)
                     .frame(width: width)
                     .font(.system(size: 11).monospacedDigit())
+                    .accessibilityLabel(label)
                 if !unit.isEmpty {
                     Text(unit).font(.system(size: 8)).foregroundStyle(.secondary)
                 }
@@ -280,18 +300,28 @@ private struct BandRow: View {
 // MARK: - Interactive response graph + spectrum
 
 private struct EQGraph: View {
+    private struct BandDragState {
+        let id: PEQBand.ID
+        let band: PEQBand
+        let controlFrequency: Double
+        let controlDB: Double
+    }
+
     @Binding var profile: PEQProfile
     /// Held, not observed: the spectrum repaints inside `SpectrumView` so its
     /// 24 fps updates don't drag the static grid + curve into every frame.
     let analyzer: SpectrumAnalyzer
     @Binding var selectedBand: PEQBand.ID?
+    let sampleRate: Double
     @Environment(\.colorScheme) private var colorScheme
+    @State private var dragState: BandDragState?
 
-    private let dbRange: Double = 18
+    private let dbRange: Double = 24
     private let fMin: Double = 20
     private let fMax: Double = 20_000
-    private let displaySampleRate: Double = 48_000
     private let space = "eqgraph"
+
+    private var displaySampleRate: Double { max(sampleRate, 1) }
 
     var body: some View {
         GeometryReader { geo in
@@ -306,7 +336,6 @@ private struct EQGraph: View {
                     drawGrid(context, size)
                     drawCurve(context, size)
                 }
-                .background(ScrollCatcher { deltaY in adjustSelectedQ(by: deltaY) })
 
                 ForEach($profile.bands) { $band in
                     if band.isEnabled {
@@ -315,6 +344,15 @@ private struct EQGraph: View {
                 }
             }
             .coordinateSpace(name: space)
+            .background(
+                ScrollCatcher { deltaY, location, isPrecise, isFineAdjustment in
+                    adjustQ(by: deltaY,
+                            at: location,
+                            size: geo.size,
+                            isPrecise: isPrecise,
+                            isFineAdjustment: isFineAdjustment)
+                }
+            )
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(colorScheme == .dark ? Color.black.opacity(0.25) : Color.white.opacity(0.4))
@@ -365,31 +403,169 @@ private struct EQGraph: View {
     // MARK: Handles
 
     private func handle(_ band: Binding<PEQBand>, size: CGSize) -> some View {
-        let id = band.wrappedValue.id
+        let value = band.wrappedValue
+        let id = value.id
         let isSelected = selectedBand == id
-        let position = CGPoint(x: xPos(band.wrappedValue.frequency, width: size.width),
-                               y: yPos(band.wrappedValue.gainDB, height: size.height))
-        return Circle()
-            .fill(EQWashi.rikyu.opacity(isSelected ? 1 : 0.7))
-            .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: isSelected ? 2 : 1))
-            .frame(width: isSelected ? 18 : 14, height: isSelected ? 18 : 14)
+        let controlFrequency = PEQResponse.controlFrequency(for: value,
+                                                            sampleRate: displaySampleRate,
+                                                            fMin: fMin,
+                                                            fMax: fMax)
+        let controlDB = PEQResponse.magnitudeDB(profile: profile,
+                                                frequency: controlFrequency,
+                                                sampleRate: displaySampleRate)
+        let position = CGPoint(x: xPos(controlFrequency, width: size.width),
+                               y: yPos(controlDB, height: size.height))
+        return ZStack {
+            Circle()
+                .fill(EQWashi.rikyu.opacity(isSelected ? 1 : 0.72))
+                .overlay(Circle().stroke(.white.opacity(0.92), lineWidth: isSelected ? 2 : 1))
+                .shadow(color: .black.opacity(isSelected ? 0.22 : 0.10), radius: isSelected ? 4 : 2, y: 1)
+                .frame(width: isSelected ? 18 : 14, height: isSelected ? 18 : 14)
+
+            if isSelected {
+                Text(String(format: "Q %.2f", value.q))
+                    .font(.system(size: 9, weight: .medium).monospacedDigit())
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 6)
+                    .frame(height: 19)
+                    .background(.regularMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(.white.opacity(0.18), lineWidth: 0.5))
+                    .offset(y: position.y < 34 ? 25 : -25)
+                    .allowsHitTesting(false)
+            }
+        }
+            .frame(width: 36, height: 36)
+            .contentShape(Rectangle())
             .position(position)
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .named(space))
                     .onChanged { value in
                         selectedBand = id
-                        band.wrappedValue.frequency = clampFreq(freqAt(value.location.x, width: size.width))
-                        band.wrappedValue.gainDB = clampGain(dbAt(value.location.y, height: size.height))
+                        if dragState?.id != id {
+                            dragState = BandDragState(id: id,
+                                                      band: band.wrappedValue,
+                                                      controlFrequency: controlFrequency,
+                                                      controlDB: controlDB)
+                        }
+                        guard let dragState, dragState.id == id else { return }
+                        updateBand(band,
+                                   from: dragState,
+                                   translation: value.translation,
+                                   size: size)
                     }
+                    .onEnded { _ in dragState = nil }
             )
+            .help("Drag: frequency and gain · Scroll: Q")
+            .accessibilityLabel("\(value.type.displayName) EQ band")
+            .accessibilityValue("\(Int(value.frequency.rounded())) hertz, \(String(format: "%+.1f", value.gainDB)) decibels, Q \(String(format: "%.2f", value.q))")
     }
 
-    private func adjustSelectedQ(by deltaY: CGFloat) {
-        guard let id = selectedBand,
+    private func updateBand(_ binding: Binding<PEQBand>,
+                            from state: BandDragState,
+                            translation: CGSize,
+                            size: CGSize) {
+        let startX = xPos(state.controlFrequency, width: size.width)
+        let startY = yPos(state.controlDB, height: size.height)
+        let targetFrequency = freqAt(startX + translation.width, width: size.width)
+        let targetDB = min(max(dbAt(startY + translation.height, height: size.height),
+                               -dbRange), dbRange)
+
+        var candidate = state.band
+        switch candidate.type {
+        case .peak:
+            candidate.frequency = clampFreq(targetFrequency)
+            candidate.gainDB = solvedGain(for: candidate,
+                                          at: candidate.frequency,
+                                          targetTotalDB: targetDB)
+
+        case .lowShelf, .highShelf:
+            // Preserve the visual shoulder-to-centre ratio while moving, then
+            // refine it after the gain solution so the handle tracks the cursor.
+            let startRatio = state.controlFrequency / max(state.band.frequency, fMin)
+            candidate.frequency = clampFreq(targetFrequency / max(startRatio, 0.0001))
+            for _ in 0..<3 {
+                candidate.gainDB = solvedGain(for: candidate,
+                                              at: targetFrequency,
+                                              targetTotalDB: targetDB)
+                let actualControlFrequency = PEQResponse.controlFrequency(for: candidate,
+                                                                          sampleRate: displaySampleRate,
+                                                                          fMin: fMin,
+                                                                          fMax: fMax)
+                guard actualControlFrequency > 0 else { break }
+                candidate.frequency = clampFreq(candidate.frequency * targetFrequency / actualControlFrequency)
+            }
+            candidate.gainDB = solvedGain(for: candidate,
+                                          at: targetFrequency,
+                                          targetTotalDB: targetDB)
+        }
+
+        candidate.gainDB = clampGain(candidate.gainDB)
+        binding.wrappedValue = candidate
+    }
+
+    private func solvedGain(for band: PEQBand,
+                            at frequency: Double,
+                            targetTotalDB: Double) -> Double {
+        let otherDB = PEQResponse.magnitudeDB(profile: profile,
+                                              frequency: frequency,
+                                              sampleRate: displaySampleRate,
+                                              excluding: band.id)
+        let targetBandDB = targetTotalDB - otherDB
+        var lower = -dbRange
+        var upper = dbRange
+
+        // At a bell apex or shelf shoulder, response is monotonic in gain.
+        // Solving instead of assigning gain directly keeps the dot under the
+        // cursor when preamp and overlapping bands contribute to the curve.
+        for _ in 0..<18 {
+            let midpoint = (lower + upper) / 2
+            var probe = band
+            probe.gainDB = midpoint
+            let coefficients = BiquadCoefficients(band: probe, sampleRate: displaySampleRate)
+            let magnitude = coefficients.magnitude(atFrequency: frequency,
+                                                   sampleRate: displaySampleRate)
+            let responseDB = magnitude > 0 ? 20 * log10(magnitude) : -dbRange
+            if responseDB < targetBandDB {
+                lower = midpoint
+            } else {
+                upper = midpoint
+            }
+        }
+        return (lower + upper) / 2
+    }
+
+    private func adjustQ(by deltaY: CGFloat,
+                         at location: CGPoint,
+                         size: CGSize,
+                         isPrecise: Bool,
+                         isFineAdjustment: Bool) {
+        let hoveredID = profile.bands
+            .filter(\.isEnabled)
+            .map { band -> (PEQBand.ID, CGFloat) in
+                let frequency = PEQResponse.controlFrequency(for: band,
+                                                             sampleRate: displaySampleRate,
+                                                             fMin: fMin,
+                                                             fMax: fMax)
+                let db = PEQResponse.magnitudeDB(profile: profile,
+                                                 frequency: frequency,
+                                                 sampleRate: displaySampleRate)
+                let point = CGPoint(x: xPos(frequency, width: size.width),
+                                    y: yPos(db, height: size.height))
+                return (band.id, hypot(point.x - location.x, point.y - location.y))
+            }
+            .filter { $0.1 <= 30 }
+            .min { $0.1 < $1.1 }?.0
+
+        guard let id = hoveredID ?? selectedBand,
               let index = profile.bands.firstIndex(where: { $0.id == id }) else { return }
-        let factor = pow(1.04, Double(deltaY))
-        let newQ = (profile.bands[index].q * factor)
-        profile.bands[index].q = (min(max(newQ, 0.1), 12) * 100).rounded() / 100
+        selectedBand = id
+        var effectiveDelta = Double(deltaY)
+        if isPrecise { effectiveDelta *= 0.35 }
+        if isFineAdjustment { effectiveDelta *= 0.2 }
+        let factor = pow(1.04, effectiveDelta)
+        let newQ = profile.bands[index].q * factor
+        let range = PEQConstraints.qRange(for: profile.bands[index].type)
+        profile.bands[index].q = (min(max(newQ, range.lowerBound), range.upperBound) * 100).rounded() / 100
     }
 
     // MARK: Coordinate mapping
@@ -414,8 +590,15 @@ private struct EQGraph: View {
         return Double((height / 2 - y) / (height / 2)) * dbRange
     }
 
-    private func clampFreq(_ f: Double) -> Double { min(max(f, fMin), fMax) }
-    private func clampGain(_ g: Double) -> Double { (min(max(g, -dbRange), dbRange) * 10).rounded() / 10 }
+    private func clampFreq(_ f: Double) -> Double {
+        min(max(f, PEQConstraints.frequencyRange.lowerBound),
+            PEQConstraints.frequencyRange.upperBound)
+    }
+
+    private func clampGain(_ g: Double) -> Double {
+        let range = PEQConstraints.gainRange
+        return (min(max(g, range.lowerBound), range.upperBound) * 10).rounded() / 10
+    }
 }
 
 // MARK: - Spectrum layer
@@ -448,11 +631,12 @@ private struct SpectrumView: View {
 // MARK: - Scroll-wheel capture (for Q on the graph)
 
 private struct ScrollCatcher: NSViewRepresentable {
-    let onScroll: (CGFloat) -> Void
+    let onScroll: (CGFloat, CGPoint, Bool, Bool) -> Void
 
     func makeNSView(context: Context) -> NSView {
         let view = CatcherView()
         view.onScroll = onScroll
+        view.installMonitor()
         return view
     }
 
@@ -460,10 +644,42 @@ private struct ScrollCatcher: NSViewRepresentable {
         (nsView as? CatcherView)?.onScroll = onScroll
     }
 
+    static func dismantleNSView(_ nsView: NSView, coordinator: Void) {
+        (nsView as? CatcherView)?.removeMonitor()
+    }
+
     final class CatcherView: NSView {
-        var onScroll: ((CGFloat) -> Void)?
-        override func scrollWheel(with event: NSEvent) {
-            onScroll?(event.scrollingDeltaY)
+        var onScroll: ((CGFloat, CGPoint, Bool, Bool) -> Void)?
+        private var monitor: Any?
+
+        override var isFlipped: Bool { true }
+
+        func installMonitor() {
+            guard monitor == nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+                guard let self,
+                      event.window === self.window else {
+                    return event
+                }
+                let location = self.convert(event.locationInWindow, from: nil)
+                guard self.bounds.contains(location) else { return event }
+                self.onScroll?(event.scrollingDeltaY,
+                               location,
+                               event.hasPreciseScrollingDeltas,
+                               event.modifierFlags.contains(.shift))
+                return event
+            }
+        }
+
+        func removeMonitor() {
+            if let monitor {
+                NSEvent.removeMonitor(monitor)
+                self.monitor = nil
+            }
+        }
+
+        deinit {
+            removeMonitor()
         }
     }
 }

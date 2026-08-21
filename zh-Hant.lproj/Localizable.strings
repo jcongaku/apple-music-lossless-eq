@@ -19,12 +19,17 @@
 "Equalizer active" = "等化器已啟用";
 "Bypassed — bit-perfect" = "已旁路 — bit-perfect";
 "Drag a point: frequency × gain · Scroll: Q" = "拖曳圓點：頻率 × 增益 · 捲動：Q";
+"Drag: frequency × gain · Hover point + scroll: Q · Shift: fine" = "拖曳：頻率 × 增益 · 懸停圓點並捲動：Q · Shift：微調";
 "Choose an AutoEQ ParametricEQ.txt file" = "選擇一個 AutoEQ ParametricEQ.txt 檔案";
 "Equalizer on — Apple Music is no longer bit-perfect." = "等化器已開啟 — Apple Music 不再是 bit-perfect。";
 "Equalizer off — bit-perfect playback restored." = "等化器已關閉 — 已恢復 bit-perfect 播放。";
 "Couldn't start the EQ engine." = "無法啟動等化器引擎。";
 "Imported %1$ld bands from %2$@." = "已從 %2$@ 匯入 %1$ld 個頻段。";
 "Imported %1$ld bands from %2$@ (%3$ld unsupported filters skipped)." = "已從 %2$@ 匯入 %1$ld 個頻段（略過 %3$ld 個不支援的濾波器）。";
+"Imported %1$ld bands from %2$@ (%3$ld skipped or over limit)." = "已從 %2$@ 匯入 %1$ld 個頻段（略過或超出上限：%3$ld 個）。";
+"Maximum %1$ld EQ bands." = "最多支援 %1$ld 個等化頻段。";
+"Output peak protected — lower boost or preamp" = "已保護輸出峰值 — 請降低增益或前級增益";
+"Automatic headroom prevents output clipping" = "自動餘量可防止輸出削波";
 "No filters found in %1$@." = "%1$@ 中找不到濾波器。";
 "Couldn't read %1$@." = "無法讀取 %1$@。";
 "copy" = "複本";

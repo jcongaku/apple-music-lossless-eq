@@ -19,12 +19,17 @@
 "Equalizer active" = "均衡器已启用";
 "Bypassed — bit-perfect" = "已旁路 — bit-perfect";
 "Drag a point: frequency × gain · Scroll: Q" = "拖动圆点：频率 × 增益 · 滚轮：Q";
+"Drag: frequency × gain · Hover point + scroll: Q · Shift: fine" = "拖动：频率 × 增益 · 悬停圆点并滚动：Q · Shift：微调";
 "Choose an AutoEQ ParametricEQ.txt file" = "选择一个 AutoEQ ParametricEQ.txt 文件";
 "Equalizer on — Apple Music is no longer bit-perfect." = "均衡器已开启 — Apple Music 不再是 bit-perfect。";
 "Equalizer off — bit-perfect playback restored." = "均衡器已关闭 — 已恢复 bit-perfect 播放。";
 "Couldn't start the EQ engine." = "无法启动均衡器引擎。";
 "Imported %1$ld bands from %2$@." = "已从 %2$@ 导入 %1$ld 个频段。";
 "Imported %1$ld bands from %2$@ (%3$ld unsupported filters skipped)." = "已从 %2$@ 导入 %1$ld 个频段（跳过 %3$ld 个不支持的滤波器）。";
+"Imported %1$ld bands from %2$@ (%3$ld skipped or over limit)." = "已从 %2$@ 导入 %1$ld 个频段（跳过或超出上限：%3$ld 个）。";
+"Maximum %1$ld EQ bands." = "最多支持 %1$ld 个均衡频段。";
+"Output peak protected — lower boost or preamp" = "已保护输出峰值 — 请降低增益或前级增益";
+"Automatic headroom prevents output clipping" = "自动余量可防止输出削波";
 "No filters found in %1$@." = "%1$@ 中未找到滤波器。";
 "Couldn't read %1$@." = "无法读取 %1$@。";
 "copy" = "副本";
