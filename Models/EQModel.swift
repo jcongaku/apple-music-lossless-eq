@@ -13,11 +13,17 @@ final class EQModel: ObservableObject {
     @Published private(set) var isEnabled = false
     @Published private(set) var engineRunning = false
     @Published private(set) var currentSampleRate: Double?
+    @Published private(set) var automaticHeadroomDB = 0.0
+    @Published private(set) var clippingDetected = false
     @Published var statusMessage = ""
 
     let analyzer = SpectrumAnalyzer()
     private let engine = ProcessTapEngine()
     private var saveWork: DispatchWorkItem?
+    private var engineApplyWork: DispatchWorkItem?
+    private var clippingTimer: Timer?
+    private var lastClippingEpoch: UInt64 = 0
+    private var clippingVisibleUntil = Date.distantPast
 
     init() {
         let store = EQModel.load()
@@ -28,6 +34,21 @@ final class EQModel: ObservableObject {
             Task { @MainActor in
                 self?.currentSampleRate = rate
                 self?.analyzer.sampleRate = rate
+            }
+        }
+        engine.onHeadroomChange = { [weak self] attenuation in
+            Task { @MainActor in self?.automaticHeadroomDB = attenuation }
+        }
+        engine.onRuntimeError = { [weak self] message in
+            Task { @MainActor in
+                guard let self else { return }
+                self.engineRunning = false
+                self.isEnabled = false
+                self.currentSampleRate = nil
+                self.automaticHeadroomDB = 0
+                self.analyzer.stop()
+                self.stopClippingMonitoring()
+                self.statusMessage = message
             }
         }
     }
@@ -45,12 +66,10 @@ final class EQModel: ObservableObject {
             statusMessage = loc("Equalizer on — Apple Music is no longer bit-perfect.")
             let snapshot = profile
             engine.controlQueue.async { [weak self] in
+                engine.setSampleSink(analyzer)
+                engine.apply(profile: snapshot)
+                engine.setActive(true)
                 let started = engine.start()
-                if started {
-                    engine.sampleSink = analyzer
-                    engine.apply(profile: snapshot)
-                    engine.setActive(true)
-                }
                 let rate = engine.sampleRate
                 let error = engine.lastError
                 DispatchQueue.main.async {
@@ -60,7 +79,9 @@ final class EQModel: ObservableObject {
                         self.currentSampleRate = rate
                         analyzer.sampleRate = rate
                         analyzer.start()
+                        self.startClippingMonitoring()
                     } else {
+                        engine.setSampleSink(nil)
                         self.isEnabled = false
                         self.statusMessage = error ?? self.loc("Couldn't start the EQ engine.")
                     }
@@ -69,12 +90,14 @@ final class EQModel: ObservableObject {
         } else {
             engineRunning = false
             currentSampleRate = nil
+            automaticHeadroomDB = 0
             analyzer.stop()
+            stopClippingMonitoring()
             statusMessage = loc("Equalizer off — bit-perfect playback restored.")
             engine.controlQueue.async {
                 engine.setActive(false)
-                engine.sampleSink = nil
                 engine.stop()
+                engine.setSampleSink(nil)
             }
         }
     }
@@ -114,6 +137,11 @@ final class EQModel: ObservableObject {
     // MARK: - Band editing
 
     func addBand() {
+        guard profile.bands.count < PEQConstraints.maximumBands else {
+            statusMessage = String(format: loc("Maximum %1$ld EQ bands."),
+                                   PEQConstraints.maximumBands)
+            return
+        }
         profile.bands.append(PEQBand(type: .peak, frequency: 1000, gainDB: 0, q: 1.0))
     }
 
@@ -140,31 +168,71 @@ final class EQModel: ObservableObject {
         }
         let imported = PEQProfile(name: uniqueName(name),
                                   preampDB: result.preampDB,
-                                  bands: result.bands)
+                                  bands: result.bands).sanitized()
         profiles.append(imported)
         profile = imported
 
-        if result.skippedLines.isEmpty {
+        let truncatedCount = max(0, result.bands.count - imported.bands.count)
+        if result.skippedLines.isEmpty, truncatedCount == 0 {
             statusMessage = String(format: loc("Imported %1$ld bands from %2$@."),
-                                   result.bands.count, name)
+                                   imported.bands.count, name)
         } else {
-            statusMessage = String(format: loc("Imported %1$ld bands from %2$@ (%3$ld unsupported filters skipped)."),
-                                   result.bands.count, name, result.skippedLines.count)
+            statusMessage = String(format: loc("Imported %1$ld bands from %2$@ (%3$ld skipped or over limit)."),
+                                   imported.bands.count,
+                                   name,
+                                   result.skippedLines.count + truncatedCount)
         }
     }
 
     // MARK: - Reactions / persistence
 
     private func profileChanged() {
+        let validated = profile.sanitized()
+        if validated != profile {
+            profile = validated
+            return
+        }
         if let index = profiles.firstIndex(where: { $0.id == profile.id }) {
             profiles[index] = profile
         }
-        if engineRunning {
+        if isEnabled {
             let engine = self.engine
             let snapshot = profile
-            engine.controlQueue.async { engine.apply(profile: snapshot) }
+            engineApplyWork?.cancel()
+            let work = DispatchWorkItem {
+                engine.controlQueue.async { engine.apply(profile: snapshot) }
+            }
+            engineApplyWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.025, execute: work)
         }
         scheduleSave()
+    }
+
+    private func startClippingMonitoring() {
+        stopClippingMonitoring()
+        lastClippingEpoch = engine.clippingEventCount()
+        let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.pollClippingState() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        clippingTimer = timer
+    }
+
+    private func stopClippingMonitoring() {
+        clippingTimer?.invalidate()
+        clippingTimer = nil
+        clippingDetected = false
+    }
+
+    private func pollClippingState() {
+        let epoch = engine.clippingEventCount()
+        if epoch != lastClippingEpoch {
+            lastClippingEpoch = epoch
+            clippingVisibleUntil = Date().addingTimeInterval(2)
+            clippingDetected = true
+        } else if Date() >= clippingVisibleUntil {
+            clippingDetected = false
+        }
     }
 
     private func scheduleSave() {
@@ -204,8 +272,9 @@ final class EQModel: ObservableObject {
     private static func load() -> EQStore {
         if let url = storeURL,
            let data = try? Data(contentsOf: url),
-           let store = try? JSONDecoder().decode(EQStore.self, from: data),
+           var store = try? JSONDecoder().decode(EQStore.self, from: data),
            !store.profiles.isEmpty {
+            store.profiles = store.profiles.map { $0.sanitized() }
             return store
         }
         let fallback = PEQProfile(name: "Flat")

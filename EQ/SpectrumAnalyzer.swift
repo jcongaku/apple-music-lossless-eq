@@ -1,5 +1,6 @@
 import Foundation
 import Accelerate
+import Synchronization
 
 /// Real-time spectrum analyzer for the EQ window. The audio engine pushes
 /// post-EQ output samples in via `append` (audio thread, lock-free ring write);
@@ -17,7 +18,7 @@ final class SpectrumAnalyzer: ObservableObject, @unchecked Sendable {
     let binCount = 64
     private let fftSize = 2048
     private let halfSize = 1024
-    private let ringSize = 8192          // power of two for cheap masking
+    private static let ringSize = 65_536 // power of two; prevents reader overrun
 
     private let log2n: vDSP_Length
     private let fftSetup: FFTSetup
@@ -29,8 +30,8 @@ final class SpectrumAnalyzer: ObservableObject, @unchecked Sendable {
     private var raw: [Float]
     private var smoothed: [Float]
 
-    private var ring: [Float]
-    private var writeIndex = 0
+    private let ring: UnsafeMutablePointer<Float>
+    private let writeIndex = Atomic<Int>(0)
     private var timer: Timer?
 
     init() {
@@ -44,21 +45,27 @@ final class SpectrumAnalyzer: ObservableObject, @unchecked Sendable {
         magnitudes = [Float](repeating: 0, count: halfSize)
         raw = [Float](repeating: 0, count: binCount)
         smoothed = [Float](repeating: 0, count: binCount)
-        ring = [Float](repeating: 0, count: ringSize)
+        ring = .allocate(capacity: Self.ringSize)
+        ring.initialize(repeating: 0, count: Self.ringSize)
         levels = [Float](repeating: 0, count: binCount)
     }
 
-    deinit { vDSP_destroy_fftsetup(fftSetup) }
+    deinit {
+        timer?.invalidate()
+        ring.deinitialize(count: Self.ringSize)
+        ring.deallocate()
+        vDSP_destroy_fftsetup(fftSetup)
+    }
 
     /// Audio thread: copy samples into the ring buffer. No allocation/locks.
     func append(_ samples: UnsafePointer<Float>, count: Int) {
-        var w = writeIndex
-        let mask = ringSize - 1
+        var w = writeIndex.load(ordering: .relaxed)
+        let mask = Self.ringSize - 1
         for i in 0..<count {
             ring[w & mask] = samples[i]
             w &+= 1
         }
-        writeIndex = w
+        writeIndex.store(w, ordering: .releasing)
     }
 
     func start() {
@@ -78,8 +85,8 @@ final class SpectrumAnalyzer: ObservableObject, @unchecked Sendable {
     }
 
     private func tick() {
-        let end = writeIndex
-        let mask = ringSize - 1
+        let end = writeIndex.load(ordering: .acquiring)
+        let mask = Self.ringSize - 1
         for i in 0..<fftSize {
             windowed[i] = ring[(end - fftSize + i) & mask]
         }

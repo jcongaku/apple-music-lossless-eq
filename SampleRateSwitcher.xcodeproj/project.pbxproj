@@ -26,6 +26,10 @@
 		A10000000000000000000017 /* EQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* EQView.swift */; };
 		A10000000000000000000018 /* SpectrumAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* SpectrumAnalyzer.swift */; };
 		A10000000000000000000019 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A90000000000000000000002 /* Localizable.strings */; };
+		B10000000000000000000001 /* PEQDspRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* PEQDspRegressionTests.swift */; };
+		B10000000000000000000002 /* PEQModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* PEQModels.swift */; };
+		B10000000000000000000003 /* Biquad.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* Biquad.swift */; };
+		B10000000000000000000004 /* BiquadProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* BiquadProcessor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,10 +59,19 @@
 		A20000000000000000000024 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		A20000000000000000000025 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		A20000000000000000000026 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = "ja.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		B20000000000000000000001 /* PEQDspRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PEQDspRegressionTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* ChoritsuTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ChoritsuTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A30000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B30000000000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -72,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				A40000000000000000000002 /*  */,
+				B40000000000000000000001 /* Tests */,
 				A40000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -152,10 +166,19 @@
 			path = NowPlaying;
 			sourceTree = "<group>";
 		};
+		B40000000000000000000001 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000001 /* PEQDspRegressionTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
 		A40000000000000000000003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000006 /* SampleRateSwitcher.app */,
+				B20000000000000000000002 /* ChoritsuTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -179,6 +202,23 @@
 			productName = SampleRateSwitcher;
 			productReference = A20000000000000000000006 /* SampleRateSwitcher.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B50000000000000000000001 /* ChoritsuTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B70000000000000000000001 /* Build configuration list for PBXNativeTarget "ChoritsuTests" */;
+			buildPhases = (
+				B30000000000000000000002 /* Sources */,
+				B30000000000000000000001 /* Frameworks */,
+				B30000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ChoritsuTests;
+			productName = ChoritsuTests;
+			productReference = B20000000000000000000002 /* ChoritsuTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -205,6 +245,7 @@
 			projectRoot = "";
 			targets = (
 				A50000000000000000000001 /* SampleRateSwitcher */,
+				B50000000000000000000001 /* ChoritsuTests */,
 			);
 		};
 /* End PBXProject section */
@@ -217,6 +258,13 @@
 				A10000000000000000000009 /* AppIcon.icon in Resources */,
 				A10000000000000000000010 /* InfoPlist.strings in Resources */,
 				A10000000000000000000019 /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B30000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -243,6 +291,17 @@
 				A10000000000000000000016 /* EQModel.swift in Sources */,
 				A10000000000000000000017 /* EQView.swift in Sources */,
 				A10000000000000000000018 /* SpectrumAnalyzer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B30000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000001 /* PEQDspRegressionTests.swift in Sources */,
+				B10000000000000000000002 /* PEQModels.swift in Sources */,
+				B10000000000000000000003 /* Biquad.swift in Sources */,
+				B10000000000000000000004 /* BiquadProcessor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -346,6 +405,32 @@
 			};
 			name = Release;
 		};
+		B80000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.garykong.choritsu.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		B80000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.garykong.choritsu.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -363,6 +448,15 @@
 			buildConfigurations = (
 				A80000000000000000000001 /* Debug */,
 				A80000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B70000000000000000000001 /* Build configuration list for PBXNativeTarget "ChoritsuTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B80000000000000000000001 /* Debug */,
+				B80000000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

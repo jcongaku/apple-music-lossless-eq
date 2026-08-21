@@ -1,5 +1,25 @@
 import Foundation
 
+enum PEQConstraints {
+    static let maximumBands = 32
+    static let frequencyRange = 20.0...20_000.0
+    static let gainRange = -20.0...20.0
+    static let preampRange = -24.0...12.0
+    static let peakQRange = 0.1...12.0
+    // AutoEq shelves intentionally stay below the resonant/overshooting region.
+    static let shelfQRange = 0.4...0.7
+
+    static func qRange(for type: PEQFilterType) -> ClosedRange<Double> {
+        type == .peak ? peakQRange : shelfQRange
+    }
+
+    static func clamp(_ value: Double, to range: ClosedRange<Double>,
+                      fallback: Double) -> Double {
+        guard value.isFinite else { return fallback }
+        return min(max(value, range.lowerBound), range.upperBound)
+    }
+}
+
 // MARK: - Filter vocabulary
 
 /// The parametric filter shapes Choritsu supports. The raw values mirror
@@ -55,6 +75,20 @@ struct PEQBand: Identifiable, Codable, Equatable {
         self.gainDB = gainDB
         self.q = q
     }
+
+    func sanitized() -> PEQBand {
+        var result = self
+        result.frequency = PEQConstraints.clamp(frequency,
+                                                to: PEQConstraints.frequencyRange,
+                                                fallback: 1_000)
+        result.gainDB = PEQConstraints.clamp(gainDB,
+                                             to: PEQConstraints.gainRange,
+                                             fallback: 0)
+        result.q = PEQConstraints.clamp(q,
+                                        to: PEQConstraints.qRange(for: type),
+                                        fallback: type == .peak ? 1 : 0.7)
+        return result
+    }
 }
 
 // MARK: - Profile
@@ -80,4 +114,13 @@ struct PEQProfile: Identifiable, Codable, Equatable {
     }
 
     static let flat = PEQProfile(name: "Flat")
+
+    func sanitized() -> PEQProfile {
+        var result = self
+        result.preampDB = PEQConstraints.clamp(preampDB,
+                                               to: PEQConstraints.preampRange,
+                                               fallback: 0)
+        result.bands = bands.prefix(PEQConstraints.maximumBands).map { $0.sanitized() }
+        return result
+    }
 }

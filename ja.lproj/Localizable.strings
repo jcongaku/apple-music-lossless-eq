@@ -19,12 +19,17 @@
 "Equalizer active" = "イコライザ作動中";
 "Bypassed — bit-perfect" = "バイパス中 — ビットパーフェクト";
 "Drag a point: frequency × gain · Scroll: Q" = "点をドラッグ：周波数 × ゲイン ・ スクロール：Q";
+"Drag: frequency × gain · Hover point + scroll: Q · Shift: fine" = "ドラッグ：周波数 × ゲイン · ポイント上でスクロール：Q · Shift：微調整";
 "Choose an AutoEQ ParametricEQ.txt file" = "AutoEQ の ParametricEQ.txt ファイルを選択";
 "Equalizer on — Apple Music is no longer bit-perfect." = "イコライザ オン — Apple Music はビットパーフェクトではなくなります。";
 "Equalizer off — bit-perfect playback restored." = "イコライザ オフ — ビットパーフェクト再生に戻りました。";
 "Couldn't start the EQ engine." = "イコライザエンジンを開始できませんでした。";
 "Imported %1$ld bands from %2$@." = "%2$@ から %1$ld 個のバンドを読み込みました。";
 "Imported %1$ld bands from %2$@ (%3$ld unsupported filters skipped)." = "%2$@ から %1$ld 個のバンドを読み込みました（非対応フィルタ %3$ld 個をスキップ）。";
+"Imported %1$ld bands from %2$@ (%3$ld skipped or over limit)." = "%2$@ から %1$ld 個のバンドを読み込みました（スキップまたは上限超過：%3$ld 個）。";
+"Maximum %1$ld EQ bands." = "EQ バンドは最大 %1$ld 個です。";
+"Output peak protected — lower boost or preamp" = "出力ピークを保護しました — ブーストまたはプリアンプを下げてください";
+"Automatic headroom prevents output clipping" = "自動ヘッドルームで出力クリッピングを防止します";
 "No filters found in %1$@." = "%1$@ にフィルタが見つかりません。";
 "Couldn't read %1$@." = "%1$@ を読み込めませんでした。";
 "copy" = "コピー";
