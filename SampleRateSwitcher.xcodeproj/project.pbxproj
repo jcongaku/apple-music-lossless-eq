@@ -30,6 +30,8 @@
 		B10000000000000000000002 /* PEQModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* PEQModels.swift */; };
 		B10000000000000000000003 /* Biquad.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* Biquad.swift */; };
 		B10000000000000000000004 /* BiquadProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* BiquadProcessor.swift */; };
+		B10000000000000000000005 /* LogStreamControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* LogStreamControllerTests.swift */; };
+		B10000000000000000000006 /* LogStreamController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* LogStreamController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,6 +63,7 @@
 		A20000000000000000000026 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = "ja.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		B20000000000000000000001 /* PEQDspRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PEQDspRegressionTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* ChoritsuTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ChoritsuTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000003 /* LogStreamControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStreamControllerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -170,6 +173,7 @@
 			isa = PBXGroup;
 			children = (
 				B20000000000000000000001 /* PEQDspRegressionTests.swift */,
+				B20000000000000000000003 /* LogStreamControllerTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -302,6 +306,8 @@
 				B10000000000000000000002 /* PEQModels.swift in Sources */,
 				B10000000000000000000003 /* Biquad.swift in Sources */,
 				B10000000000000000000004 /* BiquadProcessor.swift in Sources */,
+				B10000000000000000000005 /* LogStreamControllerTests.swift in Sources */,
+				B10000000000000000000006 /* LogStreamController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
