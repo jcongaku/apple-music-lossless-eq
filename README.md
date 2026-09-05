@@ -80,7 +80,7 @@ The design language is *wabi-sabi* (侘寂): washi paper, sumi ink, a muted **�
 ## Build
 
 ```bash
-git clone https://github.com/JC-kk/apple-music-lossless-eq.git
+git clone https://github.com/jcongaku/apple-music-lossless-eq.git
 cd apple-music-lossless-eq
 open SampleRateSwitcher.xcodeproj   # ⌘R to build & run
 ```
