@@ -97,6 +97,7 @@ private struct WaveMark: View {
 struct GlassPanelView: View {
     @ObservedObject var model: SampleRateModel
     @ObservedObject var eq: EQModel
+    @ObservedObject var updates: UpdateChecker
     @Environment(\.colorScheme) private var colorScheme
     @State private var showEQ = false
 
@@ -162,6 +163,24 @@ struct GlassPanelView: View {
         .help("Headphone EQ")
     }
 
+    @ViewBuilder
+    private var updateMenuItems: some View {
+        switch updates.state {
+        case let .available(version, _):
+            Button("Update available — \(version)") { updates.openReleasePage() }
+        case .checking:
+            Text("Checking for updates…")
+        case .upToDate:
+            Text("Choritsu is up to date")
+        case let .failed(message):
+            Text("Update check failed: \(message)")
+        case .idle:
+            EmptyView()
+        }
+
+        Button("Check for Updates…") { updates.check(userInitiated: true) }
+    }
+
     private var header: some View {
         HStack(spacing: 10) {
             WaveMark(size: 22)
@@ -187,6 +206,8 @@ struct GlassPanelView: View {
                 Button("Restart log parser") { model.restartLogParser() }
                 Button("Dump recent logs") { model.dumpRecentLogs() }
                 Button("Dump now playing") { model.dumpNowPlaying() }
+                Divider()
+                updateMenuItems
                 Divider()
                 Button("Quit") { NSApp.terminate(nil) }
             } label: {

@@ -95,7 +95,12 @@ On first run, macOS asks to control **Music** (Automation) and to access **Media
 | Media & Apple Music | Now-playing metadata via MusicKit |
 | Audio recording | The muted process tap that lets the EQ see Apple Music's output (only when EQ is on) |
 
-No network access, no analytics, nothing leaves your machine.
+The only network request Choritsu makes is the update check: once per launch it fetches
+`api.github.com/repos/jcongaku/apple-music-lossless-eq/releases/latest` to compare the newest
+release tag against the running version. It is an unauthenticated GET to a public endpoint —
+no account, no identifier, and no data about you or your library is sent. If a newer release
+exists, the ⋯ menu offers to open its page; Choritsu never downloads or installs anything by
+itself. No analytics, nothing else leaves your machine.
 
 ## The name and the icon
 

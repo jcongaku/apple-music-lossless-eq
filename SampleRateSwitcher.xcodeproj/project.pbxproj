@@ -32,10 +32,14 @@
 		B10000000000000000000004 /* BiquadProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* BiquadProcessor.swift */; };
 		B10000000000000000000005 /* LogStreamControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* LogStreamControllerTests.swift */; };
 		B10000000000000000000006 /* LogStreamController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* LogStreamController.swift */; };
+		A10000000000000000000020 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* UpdateChecker.swift */; };
+		B10000000000000000000007 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* UpdateChecker.swift */; };
+		B10000000000000000000008 /* UpdateCheckerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* UpdateCheckerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A20000000000000000000001 /* SampleRateSwitcherApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleRateSwitcherApp.swift; sourceTree = "<group>"; };
+		A20000000000000000000027 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* SampleRateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleRateModel.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* MusicController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicController.swift; sourceTree = "<group>"; };
 		A20000000000000000000004 /* AudioDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceController.swift; sourceTree = "<group>"; };
@@ -64,6 +68,7 @@
 		B20000000000000000000001 /* PEQDspRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PEQDspRegressionTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* ChoritsuTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ChoritsuTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000000000000000000003 /* LogStreamControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStreamControllerTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000004 /* UpdateCheckerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateCheckerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000001 /* SampleRateSwitcherApp.swift */,
+				A20000000000000000000027 /* UpdateChecker.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -174,6 +180,7 @@
 			children = (
 				B20000000000000000000001 /* PEQDspRegressionTests.swift */,
 				B20000000000000000000003 /* LogStreamControllerTests.swift */,
+				B20000000000000000000004 /* UpdateCheckerTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -280,6 +287,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000001 /* SampleRateSwitcherApp.swift in Sources */,
+				A10000000000000000000020 /* UpdateChecker.swift in Sources */,
 				A10000000000000000000002 /* SampleRateModel.swift in Sources */,
 				A10000000000000000000003 /* MusicController.swift in Sources */,
 				A10000000000000000000004 /* AudioDeviceController.swift in Sources */,
@@ -308,6 +316,8 @@
 				B10000000000000000000004 /* BiquadProcessor.swift in Sources */,
 				B10000000000000000000005 /* LogStreamControllerTests.swift in Sources */,
 				B10000000000000000000006 /* LogStreamController.swift in Sources */,
+				B10000000000000000000007 /* UpdateChecker.swift in Sources */,
+				B10000000000000000000008 /* UpdateCheckerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

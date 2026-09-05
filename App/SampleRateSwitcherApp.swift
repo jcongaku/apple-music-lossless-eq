@@ -57,14 +57,25 @@ private enum MenuBarMark {
     }()
 }
 
+/// `MenuBarExtra(.window)` builds its content lazily on first open, so a
+/// `.task` there would not run until the user clicks the menu bar. The launch
+/// update check hangs off the application lifecycle instead.
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        UpdateChecker.shared.checkAtLaunch()
+    }
+}
+
 @main
 struct SampleRateSwitcherApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model = SampleRateModel()
     @StateObject private var eq = EQModel()
+    @StateObject private var updates = UpdateChecker.shared
 
     var body: some Scene {
         MenuBarExtra {
-            GlassPanelView(model: model, eq: eq)
+            GlassPanelView(model: model, eq: eq, updates: updates)
         } label: {
             HStack(spacing: 4) {
                 Image(nsImage: MenuBarMark.image)
