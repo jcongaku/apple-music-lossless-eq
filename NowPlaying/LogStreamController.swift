@@ -92,7 +92,7 @@ final class LogStreamController {
         }
     }
 
-    private func handleLogLine(_ line: String) {
+    func handleLogLine(_ line: String) {
         guard let data = line.data(using: .utf8) else { return }
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             _ = processMessage(line)
@@ -112,7 +112,7 @@ final class LogStreamController {
             return
         }
 
-        _ = processMessage(line)
+        // Other JSON fields are metadata, not audio-format messages.
     }
 
     @discardableResult
@@ -245,8 +245,7 @@ private enum SampleRateParser {
 
     static func extractSampleRate(from json: [String: Any]) -> Double? {
         for (key, value) in json {
-            if let keyString = key as? String,
-               keyString.lowercased().contains("samplerate"),
+            if ["samplerate", "msamplerate"].contains(key.lowercased()),
                let numeric = numericValue(value) {
                 return normalize(numeric, unit: nil)
             }
@@ -274,10 +273,7 @@ private enum SampleRateParser {
             }
         }
 
-        if let number = numericValue(value) {
-            return normalize(number, unit: nil)
-        }
-
+        // Numeric leaves are evidence only under an explicit sample-rate key.
         return nil
     }
 
